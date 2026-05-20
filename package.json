@@ -1,0 +1,10 @@
+{
+  "name": "immatriculations-platform",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@netlify/functions": "^2.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "resend": "^3.0.0"
+  }
+}
