@@ -152,9 +152,20 @@ async function run() {
   console.log(`${retenues.length} nouvelles immatriculations.`);
 
   if (retenues.length === 0) {
-    console.log("Aucune nouvelle immatriculation cette semaine.");
+    console.log("Aucune nouvelle immatriculation sur la période.");
     return { statusCode: 200 };
   }
+
+  // Récupérer les SIRENs déjà connus dans Supabase
+  const sirensRetenues = retenues.map((e) => e.siren);
+  const { data: dejaDansBdd } = await supabase
+    .from("immatriculations")
+    .select("siren")
+    .in("siren", sirensRetenues);
+
+  const sirensConnus = new Set((dejaDansBdd || []).map((r) => r.siren));
+  const vraimentNouveaux = retenues.filter((e) => !sirensConnus.has(e.siren));
+  console.log(`${vraimentNouveaux.length} vraiment nouvelle(s) (pas encore en base).`);
 
   // Upsert dans Supabase (le siren unique évite les doublons)
   const rows = retenues.map((e) => ({
@@ -180,9 +191,15 @@ async function run() {
 
   console.log(`${rows.length} entrées sauvegardées dans Supabase.`);
 
+  // Email uniquement si de vraies nouvelles entreprises
+  if (vraimentNouveaux.length === 0) {
+    console.log("Pas de nouvelle entreprise depuis la dernière vérification.");
+    return { statusCode: 200 };
+  }
+
   // Envoi email
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const semaine = new Date().toLocaleDateString("fr-FR", {
+  const date = new Date().toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -191,12 +208,12 @@ async function run() {
   await resend.emails.send({
     from: "Veille Immatriculations <onboarding@resend.dev>",
     to: process.env.ALERT_EMAIL,
-    subject: `${retenues.length} nouvelle(s) immatriculation(s) — semaine du ${semaine}`,
-    html: construireEmailHtml(retenues, depuis),
+    subject: `🏪 ${vraimentNouveaux.length} nouvelle(s) immatriculation(s) détectée(s) — ${date}`,
+    html: construireEmailHtml(vraimentNouveaux, depuis),
   });
 
   console.log(`Email envoyé à ${process.env.ALERT_EMAIL}.`);
   return { statusCode: 200 };
 }
 
-export const handler = schedule("0 8 * * *", run);
+export const handler = schedule("0 * * * *", run);
