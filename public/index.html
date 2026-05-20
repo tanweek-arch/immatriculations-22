@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veille Immatriculations — Côtes-d'Armor</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --white: #ffffff;
+      --green: #22c55e;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header .logo {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    header p {
+      color: var(--text-light);
+      font-size: 0.85rem;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 40px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: block;
+    }
+
+    .stat-card .label {
+      font-size: 0.83rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      background: var(--white);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .filters input:focus,
+    .filters select:focus {
+      border-color: var(--primary);
+    }
+
+    .filters input { flex: 1; min-width: 200px; }
+
+    .result-count {
+      font-size: 0.83rem;
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+
+    .table-wrapper {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: var(--bg);
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: #f1f5f9; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--primary-light);
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .dot-new {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .siren {
+      color: var(--text-light);
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 768px) {
+      header, main { padding: 16px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🍽</div>
+  <div>
+    <h1>Veille Immatriculations — Restauration & Commerce de Bouche</h1>
+    <p>Nouvelles entreprises détectées dans les Côtes-d'Armor (22) — mise à jour chaque lundi</p>
+  </div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat-card">
+      <span class="value" id="count-week">—</span>
+      <span class="label">Cette semaine</span>
+    </div>
+    <div class="stat-card">
+      <span class="value" id="count-total">—</span>
+      <span class="label">Total détectées</span>
+    </div>
+    <div class="stat-card">
+      <span class="value" id="last-update">—</span>
+      <span class="label">Dernière mise à jour</span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="search" placeholder="Rechercher par nom, commune, dirigeant...">
+    <select id="filter-ape">
+      <option value="">Toutes les activités</option>
+      <option value="56.10A">Restauration traditionnelle</option>
+      <option value="56.10C">Restauration rapide</option>
+      <option value="55.10Z">Hôtels et hébergement</option>
+      <option value="56.30Z">Débits de boissons</option>
+      <option value="10.71C">Boulangerie-pâtisserie</option>
+      <option value="10.71D">Pâtisserie</option>
+      <option value="47.22Z">Boucherie-charcuterie</option>
+      <option value="47.24Z">Commerce pain/pâtisserie</option>
+      <option value="56.21Z">Services traiteurs</option>
+    </select>
+  </div>
+
+  <div class="legend">
+    <span class="dot-new"></span> Détectée cette semaine
+  </div>
+
+  <p class="result-count" id="result-count"></p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Raison sociale</th>
+          <th>Dirigeant</th>
+          <th>Adresse</th>
+          <th>Commune</th>
+          <th>Activité</th>
+          <th>Date création</th>
+          <th>SIREN</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr><td colspan="7" class="empty">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+  // --- Configuration Supabase ---
+  // Remplace ces deux valeurs par celles de ton projet Supabase
+  const SUPABASE_URL = "VOTRE_URL_SUPABASE";
+  const SUPABASE_ANON_KEY = "VOTRE_CLE_ANON_SUPABASE";
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let allData = [];
+
+  // --- Chargement des données ---
+
+  async function loadData() {
+    const { data, error } = await db
+      .from("immatriculations")
+      .select("*")
+      .order("detected_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      document.getElementById("table-body").innerHTML =
+        '<tr><td colspan="7" class="empty">Erreur de chargement des données.</td></tr>';
+      return;
+    }
+
+    allData = data || [];
+    updateStats();
+    renderTable(allData);
+  }
+
+  // --- Statistiques ---
+
+  function updateStats() {
+    document.getElementById("count-total").textContent = allData.length;
+
+    const limite = new Date();
+    limite.setDate(limite.getDate() - 7);
+    const nb = allData.filter(e => new Date(e.detected_at) >= limite).length;
+    document.getElementById("count-week").textContent = nb;
+
+    if (allData.length > 0) {
+      const last = new Date(allData[0].detected_at);
+      document.getElementById("last-update").textContent =
+        last.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    } else {
+      document.getElementById("last-update").textContent = "—";
+    }
+  }
+
+  // --- Rendu du tableau ---
+
+  function renderTable(data) {
+    const tbody = document.getElementById("table-body");
+    document.getElementById("result-count").textContent =
+      data.length === 0 ? "" : `${data.length} résultat(s)`;
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">Aucun résultat pour ces filtres.</td></tr>';
+      return;
+    }
+
+    const limite = new Date();
+    limite.setDate(limite.getDate() - 7);
+
+    tbody.innerHTML = data.map(e => {
+      const isNew = new Date(e.detected_at) >= limite;
+      const dateCreation = e.date_creation
+        ? new Date(e.date_creation).toLocaleDateString("fr-FR")
+        : "—";
+
+      return `
+        <tr>
+          <td>
+            ${isNew ? '<span class="dot-new"></span>' : ""}
+            <strong>${e.raison_sociale || "—"}</strong>
+          </td>
+          <td>${e.dirigeant || "—"}</td>
+          <td style="color:var(--text-light);font-size:0.82rem;">${e.adresse || "—"}</td>
+          <td>${e.commune || "—"}</td>
+          <td><span class="badge">${e.activite || e.code_ape || "—"}</span></td>
+          <td style="white-space:nowrap;">${dateCreation}</td>
+          <td class="siren">${e.siren || "—"}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  // --- Filtres ---
+
+  function filterData() {
+    const search = document.getElementById("search").value.toLowerCase().trim();
+    const ape = document.getElementById("filter-ape").value;
+
+    const filtered = allData.filter(e => {
+      const matchSearch = !search ||
+        (e.raison_sociale || "").toLowerCase().includes(search) ||
+        (e.commune || "").toLowerCase().includes(search) ||
+        (e.dirigeant || "").toLowerCase().includes(search) ||
+        (e.adresse || "").toLowerCase().includes(search);
+      const matchApe = !ape || e.code_ape === ape;
+      return matchSearch && matchApe;
+    });
+
+    renderTable(filtered);
+  }
+
+  document.getElementById("search").addEventListener("input", filterData);
+  document.getElementById("filter-ape").addEventListener("change", filterData);
+
+  loadData();
+</script>
+
+</body>
+</html>
