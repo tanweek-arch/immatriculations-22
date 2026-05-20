@@ -36,7 +36,7 @@ const APE_LABELS = {
   "56.21Z": "Services traiteurs",
 };
 
-const DEPARTEMENT = "22";
+const DEPARTEMENTS = ["22", "35"];
 const JOURS = 7;
 
 // --- Utilitaires ---
@@ -58,14 +58,14 @@ function extraireDirigeant(dirigeants) {
 
 // --- Récupération API ---
 
-async function fetchToutesPages() {
+async function fetchDepartement(departement) {
   const resultats = [];
   let page = 1;
 
   while (true) {
     const params = new URLSearchParams({
       activite_principale: APE_CODES.join(","),
-      departement: DEPARTEMENT,
+      departement,
       etat_administratif: "A",
       per_page: "25",
       page: String(page),
@@ -84,6 +84,11 @@ async function fetchToutesPages() {
   }
 
   return resultats;
+}
+
+async function fetchToutesPages() {
+  const resultats = await Promise.all(DEPARTEMENTS.map(fetchDepartement));
+  return resultats.flat();
 }
 
 // --- Filtrage ---
