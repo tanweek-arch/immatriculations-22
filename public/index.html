@@ -355,7 +355,10 @@
         <tr>
           <td>
             ${isNew ? '<span class="dot-new"></span>' : ""}
-            <strong>${e.raison_sociale || "—"}</strong>
+            ${e.google_place_id
+              ? `<a href="https://www.google.com/maps/place/?q=place_id:${e.google_place_id}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:700;" title="Voir la fiche Google Business">${e.raison_sociale || "—"}</a>`
+              : `<strong>${e.raison_sociale || "—"}</strong>`
+            }
           </td>
           <td>${e.dirigeant || "—"}</td>
           <td style="color:var(--text-light);font-size:0.82rem;">${e.adresse || "—"}</td>
