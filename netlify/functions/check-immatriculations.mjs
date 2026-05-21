@@ -36,7 +36,7 @@ const APE_LABELS = {
   "56.21Z": "Services traiteurs",
 };
 
-const DEPARTEMENTS = ["22", "35"];
+const DEPARTEMENTS = ["22", "29", "35", "56"];
 const JOURS = 7;
 
 // --- Utilitaires ---
@@ -119,7 +119,7 @@ function construireEmailHtml(entreprises, depuis) {
 
   return `
     <div style="font-family:sans-serif;max-width:800px;margin:0 auto;padding:24px;">
-      <h2 style="color:#2563eb;">Nouvelles immatriculations — Côtes-d'Armor</h2>
+      <h2 style="color:#2563eb;">Nouvelles immatriculations — Bretagne</h2>
       <p style="color:#64748b;">${entreprises.length} nouvelle(s) immatriculation(s) détectée(s) depuis le ${depuis}.</p>
       <table style="width:100%;border-collapse:collapse;margin-top:16px;">
         <thead>
