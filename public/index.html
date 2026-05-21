@@ -60,7 +60,7 @@
     }
 
     main {
-      max-width: 1200px;
+      max-width: 1600px;
       margin: 0 auto;
       padding: 32px 40px;
     }
@@ -370,10 +370,10 @@
                 : '<span style="color:#dc2626;">❌</span>'
             }
           </td>
-          <td>
+          <td style="text-align:center;">
             ${e.website
-              ? `<a href="${e.website}" target="_blank" style="color:var(--primary);font-size:0.82rem;">🔗 ${e.website.replace(/^https?:\/\//, "")}</a>`
-              : '<span style="color:#dc2626;font-size:0.82rem;">Pas de site</span>'
+              ? `<a href="${e.website}" target="_blank" title="${e.website}" style="font-size:1.1rem;text-decoration:none;">🔗</a>`
+              : '<span style="color:#dc2626;font-size:0.75rem;">Pas de site</span>'
             }
           </td>
           <td class="siren">${e.siren || "—"}</td>
