@@ -274,4 +274,4 @@ async function run() {
   return { statusCode: 200 };
 }
 
-export const handler = schedule("0 * * * *", run);
+export const handler = schedule("0 8 * * *", run);
