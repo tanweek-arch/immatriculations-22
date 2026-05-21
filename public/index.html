@@ -269,6 +269,7 @@
           <th>Activité</th>
           <th>Date création</th>
           <th>Google Business</th>
+          <th>Site web</th>
           <th>SIREN</th>
         </tr>
       </thead>
@@ -367,6 +368,12 @@
               : e.google_business
                 ? `<span style="color:#16a34a;">✅</span>${e.google_rating ? ` ${e.google_rating}⭐` : ""}${e.phone ? `<br><span style="font-size:0.8rem;color:var(--text-light);">${e.phone}</span>` : ""}`
                 : '<span style="color:#dc2626;">❌</span>'
+            }
+          </td>
+          <td>
+            ${e.website
+              ? `<a href="${e.website}" target="_blank" style="color:var(--primary);font-size:0.82rem;">🔗 ${e.website.replace(/^https?:\/\//, "")}</a>`
+              : '<span style="color:#dc2626;font-size:0.82rem;">Pas de site</span>'
             }
           </td>
           <td class="siren">${e.siren || "—"}</td>

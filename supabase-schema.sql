@@ -15,6 +15,14 @@ CREATE TABLE immatriculations (
   detected_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Colonnes Google Business
+ALTER TABLE immatriculations
+  ADD COLUMN IF NOT EXISTS google_business     BOOLEAN,
+  ADD COLUMN IF NOT EXISTS google_place_id     TEXT,
+  ADD COLUMN IF NOT EXISTS google_rating       NUMERIC(2,1),
+  ADD COLUMN IF NOT EXISTS google_reviews      INTEGER,
+  ADD COLUMN IF NOT EXISTS google_checked_at   TIMESTAMPTZ;
+
 -- Index pour les tris et filtres fréquents
 CREATE INDEX idx_detected_at ON immatriculations (detected_at DESC);
 CREATE INDEX idx_code_ape    ON immatriculations (code_ape);
