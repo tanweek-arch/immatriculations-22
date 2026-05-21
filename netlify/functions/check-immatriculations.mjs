@@ -169,6 +169,7 @@ async function checkGoogleBusiness(nom, commune) {
     google_place_id: first.place_id || null,
     google_rating: first.rating || null,
     google_reviews: first.reviews || null,
+    phone: first.phone || null,
   };
 }
 

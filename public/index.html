@@ -268,6 +268,7 @@
           <th>Commune</th>
           <th>Activité</th>
           <th>Date création</th>
+          <th>Google Business</th>
           <th>SIREN</th>
         </tr>
       </thead>
@@ -360,6 +361,14 @@
           <td>${e.commune || "—"}</td>
           <td><span class="badge">${e.activite || e.code_ape || "—"}</span></td>
           <td style="white-space:nowrap;">${dateCreation}</td>
+          <td style="white-space:nowrap;">
+            ${e.google_business === null || e.google_business === undefined
+              ? '<span style="color:var(--text-light);">—</span>'
+              : e.google_business
+                ? `<span style="color:#16a34a;">✅</span>${e.google_rating ? ` ${e.google_rating}⭐` : ""}${e.phone ? `<br><span style="font-size:0.8rem;color:var(--text-light);">${e.phone}</span>` : ""}`
+                : '<span style="color:#dc2626;">❌</span>'
+            }
+          </td>
           <td class="siren">${e.siren || "—"}</td>
         </tr>`;
     }).join("");
