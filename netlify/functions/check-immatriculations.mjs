@@ -58,6 +58,25 @@ function extraireDirigeant(dirigeants) {
 
 // --- Récupération API ---
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchAvecRetry(url, tentatives = 3) {
+  for (let i = 0; i < tentatives; i++) {
+    const resp = await fetch(url);
+    if (resp.ok) return resp;
+    if (resp.status === 429) {
+      const attente = (i + 1) * 2000;
+      console.log(`Rate limit (429), attente ${attente}ms avant retry...`);
+      await sleep(attente);
+    } else {
+      throw new Error(`Erreur API : ${resp.status}`);
+    }
+  }
+  throw new Error("Erreur API : trop de tentatives (429)");
+}
+
 async function fetchDepartement(departement) {
   const resultats = [];
   let page = 1;
@@ -71,9 +90,7 @@ async function fetchDepartement(departement) {
       page: String(page),
     });
 
-    const resp = await fetch(`${API_URL}?${params}`);
-    if (!resp.ok) throw new Error(`Erreur API : ${resp.status}`);
-
+    const resp = await fetchAvecRetry(`${API_URL}?${params}`);
     const data = await resp.json();
     const results = data.results || [];
     if (results.length === 0) break;
@@ -81,14 +98,20 @@ async function fetchDepartement(departement) {
     resultats.push(...results);
     if (page >= (data.total_pages || 1)) break;
     page++;
+    await sleep(300);
   }
 
   return resultats;
 }
 
 async function fetchToutesPages() {
-  const resultats = await Promise.all(DEPARTEMENTS.map(fetchDepartement));
-  return resultats.flat();
+  const resultats = [];
+  for (const dept of DEPARTEMENTS) {
+    console.log(`Récupération département ${dept}...`);
+    resultats.push(...await fetchDepartement(dept));
+    await sleep(500);
+  }
+  return resultats;
 }
 
 // --- Filtrage ---
