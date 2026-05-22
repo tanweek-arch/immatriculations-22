@@ -141,54 +141,6 @@ function construireEmailHtml(entreprises, depuis) {
 
 // --- Google Business ---
 
-function nomSimilaire(nomCherche, nomTrouve) {
-  const n1 = nomCherche.toLowerCase().trim();
-  const n2 = (nomTrouve || "").toLowerCase().trim();
-  const mots = n1.split(" ").filter((m) => m.length > 2);
-  return mots.some((mot) => n2.includes(mot));
-}
-
-function communeSimilaire(commune, adresse) {
-  return (adresse || "").toLowerCase().includes(commune.toLowerCase().trim());
-}
-
-async function checkGoogleBusiness(nom, commune) {
-  const apiKey = process.env.SERPAPI_KEY;
-  if (!apiKey) return null;
-
-  const params = new URLSearchParams({
-    engine: "google_maps",
-    q: `${nom} ${commune}`,
-    hl: "fr",
-    gl: "fr",
-    api_key: apiKey,
-  });
-
-  const resp = await fetch(`https://serpapi.com/search.json?${params}`);
-  if (!resp.ok) return null;
-
-  const data = await resp.json();
-  const results = data.local_results || [];
-
-  if (results.length === 0) {
-    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null, phone: null, website: null };
-  }
-
-  const first = results[0];
-  if (!nomSimilaire(nom, first.title || "") || !communeSimilaire(commune, first.address || "")) {
-    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null, phone: null, website: null };
-  }
-
-  return {
-    google_business: true,
-    google_place_id: first.place_id || null,
-    google_rating: first.rating || null,
-    google_reviews: first.reviews || null,
-    phone: first.phone || null,
-    website: first.website || null,
-  };
-}
-
 // --- Handler principal ---
 
 async function run() {
@@ -245,24 +197,6 @@ async function run() {
   }
 
   console.log(`${rows.length} entrées sauvegardées dans Supabase.`);
-
-  // Scanner Google Business pour les vraies nouvelles entreprises
-  if (vraimentNouveaux.length > 0) {
-    console.log("Scan Google Business...");
-    for (const e of vraimentNouveaux) {
-      const google = await checkGoogleBusiness(
-        e.nom_complet || "",
-        e.siege?.libelle_commune || ""
-      );
-      if (google) {
-        await supabase
-          .from("immatriculations")
-          .update({ ...google, google_checked_at: new Date().toISOString() })
-          .eq("siren", e.siren);
-        console.log(`  ${e.nom_complet} → Google Business : ${google.google_business}`);
-      }
-    }
-  }
 
   // Email uniquement si de vraies nouvelles entreprises
   if (vraimentNouveaux.length === 0) {
