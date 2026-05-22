@@ -37,7 +37,7 @@ const APE_LABELS = {
 };
 
 const DEPARTEMENTS = ["22", "29", "35", "56"];
-const JOURS = 7;
+const JOURS = 14;
 
 // --- Utilitaires ---
 
