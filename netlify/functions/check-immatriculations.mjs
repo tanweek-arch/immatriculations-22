@@ -141,6 +141,13 @@ function construireEmailHtml(entreprises, depuis) {
 
 // --- Google Business ---
 
+function nomSimilaire(nomCherche, nomTrouve) {
+  const n1 = nomCherche.toLowerCase().trim();
+  const n2 = (nomTrouve || "").toLowerCase().trim();
+  const mots = n1.split(" ").filter((m) => m.length > 2);
+  return mots.some((mot) => n2.includes(mot));
+}
+
 async function checkGoogleBusiness(nom, commune) {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) return null;
@@ -164,6 +171,10 @@ async function checkGoogleBusiness(nom, commune) {
   }
 
   const first = results[0];
+  if (!nomSimilaire(nom, first.title || "")) {
+    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null };
+  }
+
   return {
     google_business: true,
     google_place_id: first.place_id || null,
