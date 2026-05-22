@@ -171,12 +171,12 @@ async function checkGoogleBusiness(nom, commune) {
   const results = data.local_results || [];
 
   if (results.length === 0) {
-    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null };
+    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null, phone: null, website: null };
   }
 
   const first = results[0];
   if (!nomSimilaire(nom, first.title || "") || !communeSimilaire(commune, first.address || "")) {
-    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null };
+    return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null, phone: null, website: null };
   }
 
   return {
