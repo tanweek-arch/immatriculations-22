@@ -148,6 +148,10 @@ function nomSimilaire(nomCherche, nomTrouve) {
   return mots.some((mot) => n2.includes(mot));
 }
 
+function communeSimilaire(commune, adresse) {
+  return (adresse || "").toLowerCase().includes(commune.toLowerCase().trim());
+}
+
 async function checkGoogleBusiness(nom, commune) {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) return null;
@@ -171,7 +175,7 @@ async function checkGoogleBusiness(nom, commune) {
   }
 
   const first = results[0];
-  if (!nomSimilaire(nom, first.title || "")) {
+  if (!nomSimilaire(nom, first.title || "") || !communeSimilaire(commune, first.address || "")) {
     return { google_business: false, google_place_id: null, google_rating: null, google_reviews: null };
   }
 
