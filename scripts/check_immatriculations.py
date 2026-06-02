@@ -16,6 +16,7 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
 ALERT_EMAIL = os.environ["ALERT_EMAIL"]
+SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
 
 APE_CODES = [
     "56.10A", "56.10C", "55.10Z", "56.30Z",
@@ -137,6 +138,98 @@ def upsert_supabase(rows):
     r.raise_for_status()
 
 
+# --- Scan Google Business ---
+
+def _nom_similaire(nom_cherche, nom_trouve):
+    n1 = nom_cherche.lower().strip()
+    n2 = nom_trouve.lower().strip()
+    mots = [m for m in n1.split() if len(m) > 2]
+    return any(mot in n2 for mot in mots)
+
+
+def _commune_similaire(commune, adresse):
+    return commune.lower().strip() in (adresse or "").lower()
+
+
+def check_google_business(nom, commune):
+    r = requests.get("https://serpapi.com/search.json", params={
+        "engine": "google_maps",
+        "q": f"{nom} {commune}",
+        "hl": "fr",
+        "gl": "fr",
+        "api_key": SERPAPI_KEY,
+    }, timeout=15)
+    if not r.ok:
+        return {"google_business": None}
+
+    results = r.json().get("local_results", [])
+    vide = {"google_business": False, "google_place_id": None, "google_rating": None,
+            "google_reviews": None, "phone": None, "website": None}
+    if not results:
+        return vide
+
+    first = results[0]
+    if not _nom_similaire(nom, first.get("title", "")) or \
+       not _commune_similaire(commune, first.get("address", "")):
+        return vide
+
+    return {
+        "google_business": True,
+        "google_place_id": first.get("place_id"),
+        "google_rating": first.get("rating"),
+        "google_reviews": first.get("reviews"),
+        "phone": first.get("phone"),
+        "website": first.get("website"),
+    }
+
+
+def get_non_scannes():
+    r = requests.get(
+        f"{SUPABASE_URL}/rest/v1/immatriculations",
+        params={"select": "siren,raison_sociale,commune", "google_checked_at": "is.null"},
+        headers=supabase_headers(),
+        timeout=30,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def update_google(siren, data):
+    data["google_checked_at"] = datetime.now().astimezone().isoformat()
+    r = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/immatriculations",
+        json=data,
+        params={"siren": f"eq.{siren}"},
+        headers=supabase_headers(),
+        timeout=15,
+    )
+    r.raise_for_status()
+
+
+def scan_google():
+    if not SERPAPI_KEY:
+        print("SERPAPI_KEY non défini, scan Google ignoré.")
+        return
+
+    entreprises = get_non_scannes()
+    print(f"{len(entreprises)} entreprise(s) à scanner sur Google Business...")
+
+    for i, e in enumerate(entreprises, 1):
+        nom = e.get("raison_sociale", "")
+        commune = e.get("commune", "")
+        siren = e.get("siren", "")
+        print(f"  [{i}/{len(entreprises)}] {nom} ({commune})...", end=" ", flush=True)
+
+        google = check_google_business(nom, commune)
+        update_google(siren, google)
+
+        statut = "✅" if google.get("google_business") else "❌"
+        print(f"{statut} Tel: {google.get('phone') or '-'}")
+        time.sleep(1)
+
+    print("Scan Google terminé.")
+
+
 # --- Email Resend ---
 
 def construire_html(entreprises, depuis):
@@ -224,6 +317,8 @@ def main():
 
     if vraiment_nouveaux:
         envoyer_email(vraiment_nouveaux, depuis)
+
+    scan_google()
 
 
 if __name__ == "__main__":
