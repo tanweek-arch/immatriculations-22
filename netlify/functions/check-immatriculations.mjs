@@ -77,7 +77,7 @@ async function fetchAvecRetry(url, tentatives = 3) {
   throw new Error("Erreur API : trop de tentatives (429)");
 }
 
-async function fetchDepartement(departement) {
+async function fetchDepartement(departement, depuis) {
   const resultats = [];
   let page = 1;
 
@@ -86,6 +86,7 @@ async function fetchDepartement(departement) {
       activite_principale: APE_CODES.join(","),
       departement,
       etat_administratif: "A",
+      date_creation_min: depuis,
       per_page: "25",
       page: String(page),
     });
@@ -104,23 +105,14 @@ async function fetchDepartement(departement) {
   return resultats;
 }
 
-async function fetchToutesPages() {
+async function fetchToutesPages(depuis) {
   const resultats = [];
   for (const dept of DEPARTEMENTS) {
     console.log(`Récupération département ${dept}...`);
-    resultats.push(...await fetchDepartement(dept));
+    resultats.push(...await fetchDepartement(dept, depuis));
     await sleep(500);
   }
   return resultats;
-}
-
-// --- Filtrage ---
-
-function filtrer(entreprises, depuis) {
-  return entreprises.filter((e) => {
-    const date = e.date_creation || "";
-    return date && date >= depuis;
-  });
 }
 
 // --- Email HTML ---
@@ -175,11 +167,10 @@ async function run() {
   const depuis = dateLimite();
   console.log(`Recherche depuis le ${depuis}...`);
 
-  const toutes = await fetchToutesPages();
-  console.log(`${toutes.length} entreprises actives trouvées.`);
+  const toutes = await fetchToutesPages(depuis);
+  console.log(`${toutes.length} nouvelles immatriculations trouvées depuis le ${depuis}.`);
 
-  const retenues = filtrer(toutes, depuis);
-  console.log(`${retenues.length} nouvelles immatriculations.`);
+  const retenues = toutes;
 
   if (retenues.length === 0) {
     console.log("Aucune nouvelle immatriculation sur la période.");

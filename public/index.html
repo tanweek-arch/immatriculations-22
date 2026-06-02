@@ -294,15 +294,23 @@
   // --- Chargement des données ---
 
   async function loadData() {
-    const { data, error } = await db
-      .from("immatriculations")
-      .select("*")
-      .order("detected_at", { ascending: false });
+    let data, error;
+    try {
+      ({ data, error } = await db
+        .from("immatriculations")
+        .select("*")
+        .order("detected_at", { ascending: false }));
+    } catch (e) {
+      console.error(e);
+      document.getElementById("table-body").innerHTML =
+        '<tr><td colspan="9" class="empty">Impossible de joindre la base de données. Le projet Supabase est peut-être en pause — va sur supabase.com pour le réactiver.</td></tr>';
+      return;
+    }
 
     if (error) {
       console.error(error);
       document.getElementById("table-body").innerHTML =
-        '<tr><td colspan="7" class="empty">Erreur de chargement des données.</td></tr>';
+        '<tr><td colspan="9" class="empty">Erreur de chargement des données : ' + error.message + '</td></tr>';
       return;
     }
 
