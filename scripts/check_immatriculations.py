@@ -129,7 +129,7 @@ def get_sirens_connus(sirens):
 
 def upsert_supabase(rows):
     r = requests.post(
-        f"{SUPABASE_URL}/rest/v1/immatriculations",
+        f"{SUPABASE_URL}/rest/v1/immatriculations?on_conflict=siren",
         json=rows,
         headers={**supabase_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"},
         timeout=60,
