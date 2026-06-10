@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Prospection — make-it-web</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --white: #ffffff;
+      --green: #22c55e;
+      --orange: #f59e0b;
+      --red: #dc2626;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header .logo {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+
+    header h1 { font-size: 1.1rem; font-weight: 700; }
+    header p { color: var(--text-light); font-size: 0.85rem; }
+    header a.nav-link {
+      margin-left: auto;
+      color: var(--primary);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 1700px;
+      margin: 0 auto;
+      padding: 32px 40px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      cursor: pointer;
+    }
+
+    .stat-card.active { border-color: var(--primary); background: var(--primary-light); }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--primary); display: block; }
+    .stat-card.warn .value { color: var(--orange); }
+    .stat-card .label { font-size: 0.83rem; color: var(--text-light); margin-top: 2px; }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filters input, .filters select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      background: var(--white);
+      color: var(--text);
+      outline: none;
+    }
+
+    .filters input:focus, .filters select:focus { border-color: var(--primary); }
+    .filters input { flex: 1; min-width: 200px; }
+
+    .result-count { font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px; }
+
+    .table-wrapper {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-light);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.a-relancer { background: #fffbeb; }
+
+    .empty { text-align: center; color: var(--text-light); padding: 30px !important; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .badge.plateforme { background: #fef3c7; color: #b45309; }
+    .badge.vrai-site  { background: #dcfce7; color: #15803d; }
+    .badge.aucun      { background: #fee2e2; color: #b91c1c; }
+
+    select.statut {
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      background: var(--white);
+      cursor: pointer;
+    }
+
+    select.statut.s-a_contacter { border-color: var(--border); }
+    select.statut.s-mail_envoye { border-color: var(--primary); color: var(--primary); }
+    select.statut.s-relance     { border-color: var(--orange); color: var(--orange); }
+    select.statut.s-repondu     { border-color: var(--green); color: var(--green); }
+    select.statut.s-rdv         { border-color: var(--green); color: var(--green); font-weight: 700; }
+    select.statut.s-client      { border-color: var(--green); background: #dcfce7; color: #15803d; font-weight: 700; }
+    select.statut.s-refus       { border-color: var(--red); color: var(--red); }
+
+    .notes-cell { max-width: 180px; cursor: pointer; color: var(--text-light); font-size: 0.78rem; }
+    .notes-cell:hover { color: var(--primary); }
+
+    @media (max-width: 768px) {
+      header, main { padding: 16px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📇</div>
+  <div>
+    <h1>CRM Prospection — make-it-web</h1>
+    <p>Suivi des prospects : qui contacter, qui relancer, qui a répondu</p>
+  </div>
+  <a class="nav-link" href="index.html">→ Veille immatriculations</a>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat-card" data-statut="a_contacter">
+      <span class="value" id="count-a-contacter">—</span>
+      <span class="label">À contacter (avec email)</span>
+    </div>
+    <div class="stat-card" data-statut="mail_envoye">
+      <span class="value" id="count-envoyes">—</span>
+      <span class="label">Mails envoyés</span>
+    </div>
+    <div class="stat-card warn" data-statut="__relancer__">
+      <span class="value" id="count-relancer">—</span>
+      <span class="label">À relancer (+ de 7 jours)</span>
+    </div>
+    <div class="stat-card" data-statut="__chauds__">
+      <span class="value" id="count-chauds">—</span>
+      <span class="label">Répondus / RDV / Clients</span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="search" placeholder="Rechercher par nom, ville, email...">
+    <select id="filter-statut">
+      <option value="">Tous les statuts</option>
+      <option value="a_contacter">À contacter</option>
+      <option value="mail_envoye">Mail envoyé</option>
+      <option value="relance">Relancé</option>
+      <option value="repondu">Répondu</option>
+      <option value="rdv">RDV</option>
+      <option value="client">Client</option>
+      <option value="refus">Refus</option>
+    </select>
+    <select id="filter-segment">
+      <option value="">Tous les segments</option>
+      <option value="plateforme">Plateforme (vendre un site)</option>
+      <option value="vrai site">Vrai site (services)</option>
+      <option value="aucun">Sans site (téléphone)</option>
+    </select>
+    <select id="filter-ville">
+      <option value="">Toutes les villes</option>
+    </select>
+    <select id="filter-email">
+      <option value="">Email : tous</option>
+      <option value="oui">Avec email</option>
+      <option value="non">Sans email</option>
+    </select>
+  </div>
+
+  <p class="result-count" id="result-count"></p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Ville</th>
+          <th>Catégorie</th>
+          <th>Segment</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Note</th>
+          <th>Statut</th>
+          <th>Dernier contact</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr><td colspan="10" class="empty">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = "https://ymahdoiklzwxsibiaxex.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYWhkb2lrbHp3eHNpYmlheGV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyODI1MzcsImV4cCI6MjA5NDg1ODUzN30.rfxq0K8rhUXtFpU8v8lMN0JKu2Lk1J0rAf6gGzByxeo";
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const STATUTS = {
+    a_contacter: "À contacter",
+    mail_envoye: "Mail envoyé",
+    relance: "Relancé",
+    repondu: "Répondu",
+    rdv: "RDV",
+    client: "Client",
+    refus: "Refus",
+  };
+
+  const JOURS_AVANT_RELANCE = 7;
+  let allData = [];
+  let statCardFilter = "";
+
+  function aRelancer(p) {
+    if (p.statut !== "mail_envoye" || !p.dernier_contact) return false;
+    const limite = new Date();
+    limite.setDate(limite.getDate() - JOURS_AVANT_RELANCE);
+    return new Date(p.dernier_contact) <= limite;
+  }
+
+  async function loadData() {
+    let data, error;
+    try {
+      ({ data, error } = await db
+        .from("prospects")
+        .select("*")
+        .order("nom", { ascending: true }));
+    } catch (e) {
+      console.error(e);
+      document.getElementById("table-body").innerHTML =
+        '<tr><td colspan="10" class="empty">Impossible de joindre la base de données. Le projet Supabase est peut-être en pause — va sur supabase.com pour le réactiver.</td></tr>';
+      return;
+    }
+
+    if (error) {
+      console.error(error);
+      document.getElementById("table-body").innerHTML =
+        '<tr><td colspan="10" class="empty">Erreur de chargement : ' + error.message + '</td></tr>';
+      return;
+    }
+
+    allData = data || [];
+    remplirFiltreVilles();
+    updateStats();
+    filterData();
+  }
+
+  function remplirFiltreVilles() {
+    const villes = [...new Set(allData.map(p => p.ville).filter(Boolean))].sort();
+    const select = document.getElementById("filter-ville");
+    select.innerHTML = '<option value="">Toutes les villes</option>' +
+      villes.map(v => `<option value="${v}">${v}</option>`).join("");
+  }
+
+  function updateStats() {
+    document.getElementById("count-a-contacter").textContent =
+      allData.filter(p => p.statut === "a_contacter" && p.email).length;
+    document.getElementById("count-envoyes").textContent =
+      allData.filter(p => p.statut === "mail_envoye" || p.statut === "relance").length;
+    document.getElementById("count-relancer").textContent =
+      allData.filter(aRelancer).length;
+    document.getElementById("count-chauds").textContent =
+      allData.filter(p => ["repondu", "rdv", "client"].includes(p.statut)).length;
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById("table-body");
+    document.getElementById("result-count").textContent =
+      data.length === 0 ? "" : `${data.length} prospect(s)`;
+
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="empty">Aucun prospect pour ces filtres. Importe tes CSV avec import_prospects_crm.py.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(p => {
+      const segmentClass = (p.type_site || "").replace(" ", "-");
+      const dernierContact = p.dernier_contact
+        ? new Date(p.dernier_contact).toLocaleDateString("fr-FR")
+        : "—";
+      const options = Object.entries(STATUTS)
+        .map(([val, label]) => `<option value="${val}" ${p.statut === val ? "selected" : ""}>${label}</option>`)
+        .join("");
+
+      return `
+        <tr class="${aRelancer(p) ? "a-relancer" : ""}">
+          <td>
+            <a href="https://www.google.com/maps/search/${encodeURIComponent((p.nom || "") + " " + (p.ville || ""))}"
+               target="_blank" style="color:var(--text);text-decoration:none;font-weight:700;">${p.nom || "—"}</a>
+          </td>
+          <td>${p.ville || "—"}</td>
+          <td><span class="badge">${p.categorie || "—"}</span></td>
+          <td>${p.type_site ? `<span class="badge ${segmentClass}">${p.type_site}</span>` : "—"}</td>
+          <td>${p.email ? `<a href="mailto:${p.email}" style="color:var(--primary);">${p.email}</a>` : '<span style="color:var(--text-light);">—</span>'}</td>
+          <td style="white-space:nowrap;">${p.telephone || "—"}</td>
+          <td style="white-space:nowrap;">${p.note ? `${p.note}⭐ (${p.avis || 0})` : "—"}</td>
+          <td>
+            <select class="statut s-${p.statut}" onchange="changerStatut(${p.id}, this.value)">${options}</select>
+          </td>
+          <td style="white-space:nowrap;">${dernierContact}</td>
+          <td class="notes-cell" onclick="editerNotes(${p.id})" title="${p.notes || "Cliquer pour ajouter une note"}">
+            ${p.notes ? (p.notes.length > 40 ? p.notes.slice(0, 40) + "…" : p.notes) : "+ note"}
+          </td>
+        </tr>`;
+    }).join("");
+  }
+
+  async function changerStatut(id, statut) {
+    const maj = { statut };
+    // Un envoi ou une relance met à jour la date de dernier contact
+    if (statut === "mail_envoye" || statut === "relance") {
+      maj.dernier_contact = new Date().toISOString().slice(0, 10);
+    }
+    const { error } = await db.from("prospects").update(maj).eq("id", id);
+    if (error) {
+      alert("Erreur lors de la mise à jour : " + error.message);
+      return;
+    }
+    const p = allData.find(x => x.id === id);
+    if (p) Object.assign(p, maj);
+    updateStats();
+    filterData();
+  }
+
+  async function editerNotes(id) {
+    const p = allData.find(x => x.id === id);
+    const texte = prompt("Note pour " + (p ? p.nom : "") + " :", p && p.notes ? p.notes : "");
+    if (texte === null) return;
+    const { error } = await db.from("prospects").update({ notes: texte }).eq("id", id);
+    if (error) {
+      alert("Erreur lors de la mise à jour : " + error.message);
+      return;
+    }
+    if (p) p.notes = texte;
+    filterData();
+  }
+
+  function filterData() {
+    const search = document.getElementById("search").value.toLowerCase().trim();
+    const statut = document.getElementById("filter-statut").value;
+    const segment = document.getElementById("filter-segment").value;
+    const ville = document.getElementById("filter-ville").value;
+    const email = document.getElementById("filter-email").value;
+
+    const filtered = allData.filter(p => {
+      const matchSearch = !search ||
+        (p.nom || "").toLowerCase().includes(search) ||
+        (p.ville || "").toLowerCase().includes(search) ||
+        (p.email || "").toLowerCase().includes(search) ||
+        (p.categorie || "").toLowerCase().includes(search);
+      const matchStatut = !statut || p.statut === statut;
+      const matchSegment = !segment || p.type_site === segment;
+      const matchVille = !ville || p.ville === ville;
+      const matchEmail = !email || (email === "oui" ? !!p.email : !p.email);
+      let matchCard = true;
+      if (statCardFilter === "__relancer__") matchCard = aRelancer(p);
+      else if (statCardFilter === "__chauds__") matchCard = ["repondu", "rdv", "client"].includes(p.statut);
+      else if (statCardFilter) matchCard = p.statut === statCardFilter;
+      return matchSearch && matchStatut && matchSegment && matchVille && matchEmail && matchCard;
+    });
+
+    renderTable(filtered);
+  }
+
+  // Clic sur une carte stat = filtre rapide (re-clic pour annuler)
+  document.querySelectorAll(".stat-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const cible = card.dataset.statut;
+      statCardFilter = (statCardFilter === cible) ? "" : cible;
+      document.querySelectorAll(".stat-card").forEach(c =>
+        c.classList.toggle("active", c.dataset.statut === statCardFilter));
+      filterData();
+    });
+  });
+
+  document.getElementById("search").addEventListener("input", filterData);
+  document.getElementById("filter-statut").addEventListener("change", filterData);
+  document.getElementById("filter-segment").addEventListener("change", filterData);
+  document.getElementById("filter-ville").addEventListener("change", filterData);
+  document.getElementById("filter-email").addEventListener("change", filterData);
+
+  loadData();
+</script>
+
+</body>
+</html>
