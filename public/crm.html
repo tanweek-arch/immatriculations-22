@@ -285,12 +285,25 @@
   }
 
   async function loadData() {
-    let data, error;
+    // Supabase limite chaque requête à 1000 lignes : on pagine
+    const PAGE = 1000;
+    let rows = [];
     try {
-      ({ data, error } = await db
-        .from("prospects")
-        .select("*")
-        .order("nom", { ascending: true }));
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await db
+          .from("prospects")
+          .select("*")
+          .order("nom", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) {
+          console.error(error);
+          document.getElementById("table-body").innerHTML =
+            '<tr><td colspan="10" class="empty">Erreur de chargement : ' + error.message + '</td></tr>';
+          return;
+        }
+        rows = rows.concat(data || []);
+        if (!data || data.length < PAGE) break;
+      }
     } catch (e) {
       console.error(e);
       document.getElementById("table-body").innerHTML =
@@ -298,14 +311,7 @@
       return;
     }
 
-    if (error) {
-      console.error(error);
-      document.getElementById("table-body").innerHTML =
-        '<tr><td colspan="10" class="empty">Erreur de chargement : ' + error.message + '</td></tr>';
-      return;
-    }
-
-    allData = data || [];
+    allData = rows;
     remplirFiltreVilles();
     updateStats();
     filterData();
