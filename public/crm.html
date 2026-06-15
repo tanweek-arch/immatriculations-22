@@ -107,6 +107,39 @@
 
     .result-count { font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px; }
 
+    .campaign {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .campaign h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .metric .m-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); display: block; }
+    .metric .m-label { font-size: 0.8rem; color: var(--text-light); }
+    .funnel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+    .funnel-row { display: flex; align-items: center; gap: 12px; font-size: 0.83rem; }
+    .funnel-row .f-label { width: 130px; color: var(--text-light); flex-shrink: 0; }
+    .funnel-row .f-bar-wrap { flex: 1; background: var(--bg); border-radius: 4px; height: 22px; overflow: hidden; }
+    .funnel-row .f-bar { height: 100%; background: var(--primary); border-radius: 4px; min-width: 2px; transition: width 0.3s; }
+    .funnel-row .f-count { width: 90px; text-align: right; font-weight: 600; flex-shrink: 0; }
+    .segments { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .segment-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+    .segment-card .s-name { font-size: 0.8rem; color: var(--text-light); margin-bottom: 4px; }
+    .segment-card .s-rate { font-size: 1.3rem; font-weight: 700; }
+    .segment-card .s-detail { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+    @media (max-width: 768px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .segments { grid-template-columns: 1fr; }
+      .funnel-row .f-label { width: 90px; }
+    }
+
     .table-wrapper {
       background: var(--white);
       border: 1px solid var(--border);
@@ -185,6 +218,18 @@
 </header>
 
 <main>
+  <section class="campaign">
+    <h2>Vue d'ensemble de la campagne</h2>
+    <div class="metrics">
+      <div class="metric"><span class="m-value" id="m-contactes">—</span><span class="m-label">Prospects contactés</span></div>
+      <div class="metric"><span class="m-value" id="m-reponses">—</span><span class="m-label">Réponses reçues</span></div>
+      <div class="metric"><span class="m-value" id="m-taux">—</span><span class="m-label">Taux de réponse</span></div>
+      <div class="metric"><span class="m-value" id="m-invalides">—</span><span class="m-label">Emails invalides</span></div>
+    </div>
+    <div class="funnel" id="funnel"></div>
+    <div class="segments" id="segments"></div>
+  </section>
+
   <div class="stats">
     <div class="stat-card" data-statut="a_contacter">
       <span class="value" id="count-a-contacter">—</span>
@@ -336,6 +381,60 @@
       allData.filter(aRelancer).length;
     document.getElementById("count-chauds").textContent =
       allData.filter(p => ["repondu", "rdv", "client"].includes(p.statut)).length;
+    updateCampagne();
+  }
+
+  // Statuts qui signifient "ce prospect a reçu au moins un mail"
+  const STATUTS_CONTACTE = ["mail_envoye", "relance", "repondu", "rdv", "client", "refus"];
+  // Statuts qui signifient "ce prospect a répondu" (y compris un refus)
+  const STATUTS_REPONSE = ["repondu", "rdv", "client", "refus"];
+
+  function updateCampagne() {
+    const contactes = allData.filter(p => STATUTS_CONTACTE.includes(p.statut));
+    const reponses = allData.filter(p => STATUTS_REPONSE.includes(p.statut));
+    const invalides = allData.filter(p => p.statut === "email_invalide");
+    const taux = contactes.length
+      ? Math.round((reponses.length / contactes.length) * 100)
+      : 0;
+
+    document.getElementById("m-contactes").textContent = contactes.length;
+    document.getElementById("m-reponses").textContent = reponses.length;
+    document.getElementById("m-taux").textContent = taux + "%";
+    document.getElementById("m-invalides").textContent = invalides.length;
+
+    // Tunnel de conversion
+    const etapes = [
+      ["Avec email", allData.filter(p => p.email && p.statut !== "email_invalide").length],
+      ["Contactés", contactes.length],
+      ["Réponses", reponses.length],
+      ["RDV", allData.filter(p => p.statut === "rdv").length],
+      ["Clients", allData.filter(p => p.statut === "client").length],
+    ];
+    const max = Math.max(1, ...etapes.map(e => e[1]));
+    document.getElementById("funnel").innerHTML = etapes.map(([label, n]) => `
+      <div class="funnel-row">
+        <span class="f-label">${label}</span>
+        <span class="f-bar-wrap"><span class="f-bar" style="width:${Math.round((n / max) * 100)}%"></span></span>
+        <span class="f-count">${n}</span>
+      </div>`).join("");
+
+    // Taux de réponse par segment
+    const segments = [
+      ["Plateforme", "plateforme"],
+      ["Vrai site", "vrai site"],
+      ["Sans site", "aucun"],
+    ];
+    document.getElementById("segments").innerHTML = segments.map(([nom, cle]) => {
+      const c = allData.filter(p => p.type_site === cle && STATUTS_CONTACTE.includes(p.statut)).length;
+      const r = allData.filter(p => p.type_site === cle && STATUTS_REPONSE.includes(p.statut)).length;
+      const t = c ? Math.round((r / c) * 100) : 0;
+      return `
+        <div class="segment-card">
+          <div class="s-name">${nom}</div>
+          <div class="s-rate">${t}%</div>
+          <div class="s-detail">${r} réponse(s) / ${c} contacté(s)</div>
+        </div>`;
+    }).join("");
   }
 
   function renderTable(data) {
