@@ -162,6 +162,7 @@
     select.statut.s-rdv         { border-color: var(--green); color: var(--green); font-weight: 700; }
     select.statut.s-client      { border-color: var(--green); background: #dcfce7; color: #15803d; font-weight: 700; }
     select.statut.s-refus       { border-color: var(--red); color: var(--red); }
+    select.statut.s-email_invalide { border-color: var(--text-light); color: var(--text-light); }
 
     .notes-cell { max-width: 180px; cursor: pointer; color: var(--text-light); font-size: 0.78rem; }
     .notes-cell:hover { color: var(--primary); }
@@ -214,6 +215,7 @@
       <option value="rdv">RDV</option>
       <option value="client">Client</option>
       <option value="refus">Refus</option>
+      <option value="email_invalide">Email invalide</option>
     </select>
     <select id="filter-segment">
       <option value="">Tous les segments</option>
@@ -271,6 +273,7 @@
     rdv: "RDV",
     client: "Client",
     refus: "Refus",
+    email_invalide: "Email invalide",
   };
 
   const JOURS_AVANT_RELANCE = 7;

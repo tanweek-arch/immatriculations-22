@@ -14,7 +14,7 @@ CREATE TABLE prospects (
   note            NUMERIC(2,1),
   avis            INTEGER,
   statut          TEXT NOT NULL DEFAULT 'a_contacter'
-                  CHECK (statut IN ('a_contacter', 'mail_envoye', 'relance', 'repondu', 'rdv', 'client', 'refus')),
+                  CHECK (statut IN ('a_contacter', 'mail_envoye', 'relance', 'repondu', 'rdv', 'client', 'refus', 'email_invalide')),
   dernier_contact DATE,
   notes           TEXT,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
