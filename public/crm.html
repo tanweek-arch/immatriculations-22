@@ -228,6 +228,11 @@
     </div>
     <div class="funnel" id="funnel"></div>
     <div class="segments" id="segments"></div>
+    <div style="margin-top:18px;">
+      <button id="export-appels" type="button" style="padding:8px 14px;border:1px solid var(--primary);background:var(--white);color:var(--primary);border-radius:var(--radius);font-size:0.85rem;cursor:pointer;">
+        Exporter ma liste d'appels (emails invalides)
+      </button>
+    </div>
   </section>
 
   <div class="stats">
@@ -552,6 +557,34 @@
   document.getElementById("filter-segment").addEventListener("change", filterData);
   document.getElementById("filter-ville").addEventListener("change", filterData);
   document.getElementById("filter-email").addEventListener("change", filterData);
+
+  function exporterListeAppels() {
+    const aAppeler = allData
+      .filter(p => p.statut === "email_invalide" && p.telephone)
+      .sort((a, b) => (a.ville || "").localeCompare(b.ville || ""));
+
+    if (aAppeler.length === 0) {
+      alert("Aucun prospect à appeler pour le moment (aucun email invalide avec téléphone).");
+      return;
+    }
+
+    const entetes = ["Nom", "Telephone", "Ville", "Categorie", "Note"];
+    const champ = v => '"' + String(v || "").replace(/"/g, '""') + '"';
+    const lignes = aAppeler.map(p =>
+      [p.nom, p.telephone, p.ville, p.categorie, p.notes].map(champ).join(";")
+    );
+    const csv = "﻿" + entetes.join(";") + "\n" + lignes.join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "liste_appels_" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("export-appels").addEventListener("click", exporterListeAppels);
 
   loadData();
 </script>
