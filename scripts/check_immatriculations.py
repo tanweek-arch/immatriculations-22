@@ -257,7 +257,7 @@ def construire_html(entreprises, depuis):
         <tbody>{lignes}</tbody>
       </table>
       <p style="margin-top:24px;color:#64748b;font-size:13px;">
-        Tableau de bord : <a href="https://subtle-boba-d4635a.netlify.app">subtle-boba-d4635a.netlify.app</a>
+        Tableau de bord : <a href="https://immatriculations-22.vercel.app">immatriculations-22.vercel.app</a>
       </p>
     </div>"""
 

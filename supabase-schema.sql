@@ -21,6 +21,8 @@ ALTER TABLE immatriculations
   ADD COLUMN IF NOT EXISTS google_place_id     TEXT,
   ADD COLUMN IF NOT EXISTS google_rating       NUMERIC(2,1),
   ADD COLUMN IF NOT EXISTS google_reviews      INTEGER,
+  ADD COLUMN IF NOT EXISTS phone               TEXT,
+  ADD COLUMN IF NOT EXISTS website             TEXT,
   ADD COLUMN IF NOT EXISTS google_checked_at   TIMESTAMPTZ;
 
 -- Index pour les tris et filtres fréquents
